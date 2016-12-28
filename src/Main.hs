@@ -7,7 +7,7 @@
 
 import GopherProxy.Types
 import GopherProxy.Protocol
-import GopherProxy.Config
+import GopherProxy.Params
 
 import Prelude hiding (takeWhile)
 import Control.Exception
@@ -29,23 +29,23 @@ import Network.Socket.ByteString
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Lucid
-import Options.Generic
+import qualified Options.Applicative as O
 
-gopherProxy :: Config -> Application
+gopherProxy :: Params -> Application
 gopherProxy cfg r resp
   | requestMethod r == "GET" &&
-    rawPathInfo r == dCssUrl cfg = cssResponse cfg r resp `catch` \(e::IOException) ->
+    rawPathInfo r == cssUrl cfg = cssResponse cfg r resp `catch` \(e::IOException) ->
       internalErrorResponse "An IO error occured while retrieving the css." r resp
   | requestMethod r == "GET" = gopherResponse cfg r resp `catch` \(e::IOException) ->
       internalErrorResponse (T.pack "An IO error occured while contacting the gopher server.") r resp
   | otherwise = badRequestResponse cfg r resp
 
-cssResponse :: Config -> Application
+cssResponse :: Params -> Application
 cssResponse cfg _ respond = do
   css <- B.readFile . cssPath $ cfg
   respond $ responseLBS status200 [("Content-type", "text/css")] css
 
-gopherResponse :: Config -> Application
+gopherResponse :: Params -> Application
 gopherResponse cfg r respond = do
   (resp, mime) <- (flip fmap)
     (makeGopherRequest (hostname cfg) (port cfg) (B.fromStrict (rawPathInfo r))) $
@@ -63,7 +63,7 @@ gopherResponse cfg r respond = do
           ("text", _)      -> ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg resp))
           _                -> ([("Content-type", mime)], b)
 
-badRequestResponse :: Config -> Application
+badRequestResponse :: Params -> Application
 badRequestResponse cfg _ respond = respond $ responseLBS badRequest400
   [("Content-type", "text/plain")] "gopher-proxy did not understand your request"
 
@@ -102,18 +102,18 @@ prependBaseUrl base path
   | otherwise = base <> "/" <> path
 
 -- we generally assume that everything is utf-8 encoded
-gResponseToHtml :: Config -> GopherResponse -> Html ()
+gResponseToHtml :: Params -> GopherResponse -> Html ()
 gResponseToHtml cfg res
   = doctype_ <> html_
       (head_ (meta_ [charset_ "utf-8"]
              <> title_ "gopher-proxy"
-             <> link_ [rel_ "stylesheet", type_ "text/css", href_ . decodeUtf8 . dCssUrl $ cfg])
+             <> link_ [rel_ "stylesheet", type_ "text/css", href_ . decodeUtf8 . cssUrl $ cfg])
       <> body_ bodyContent)
   where bodyContent = case res of
                         FileResponse bytes -> pre_ (toHtml bytes)
                         MenuResponse items -> ul_ $ foldl (itemChain cfg) mempty items
 
-itemChain :: Config -> Html () -> MenuItem -> Html ()
+itemChain :: Params -> Html () -> MenuItem -> Html ()
 itemChain cfg acc (MenuItem typec desc path' host' port')
   = acc <> li_ itemHtml
     where path = decodeUtf8 . B.toStrict $ path'
@@ -124,10 +124,12 @@ itemChain cfg acc (MenuItem typec desc path' host' port')
           url = if "URL:" `T.isPrefixOf` path
                   then T.drop 4 path
                   else if host' == hostname cfg && port' == port cfg
-                    then prependBaseUrl (dBaseUrl cfg) path
+                    then prependBaseUrl (baseUrl cfg) path
                     else prependBaseUrl ("gopher://" <> (T.pack host') <> ":" <> (T.pack (show port'))) path
 
 main :: IO ()
 main = do
-  config <- getRecord "gopher-proxy"
-  run (httpPort config) (gopherProxy config)
+  params <- O.execParser helpfulParams
+  let preference = if listenPublic params then "*" else "127.0.0.1"
+      settings = setPort (httpPort params) . setHost preference $ defaultSettings
+  runSettings settings (gopherProxy params)
