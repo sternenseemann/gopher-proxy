@@ -8,6 +8,7 @@ module GopherProxy.Params
 
 import qualified Data.ByteString as BS
 import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>))
 import Data.Text (Text ())
 import Network.Socket (HostName (), PortNumber ())
 import Options.Applicative
