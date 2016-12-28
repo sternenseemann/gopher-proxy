@@ -16,5 +16,9 @@ ul {
   padding:0;
   margin:0;
   list-style:none;
-  line-height:2em;
+}
+
+li {
+  line-height:1em;
+  min-height:1em;
 }
