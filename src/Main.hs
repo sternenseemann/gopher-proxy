@@ -109,6 +109,7 @@ gResponseToHtml :: Params -> GopherResponse -> Html ()
 gResponseToHtml cfg res
   = doctype_ <> html_
       (head_ (meta_ [charset_ "utf-8"]
+             <> meta_ [term "viewport" "width=device-width"]
              <> title_ "gopher-proxy"
              <> link_ [rel_ "stylesheet", type_ "text/css", href_ . decodeUtf8 . cssUrl $ cfg])
       <> body_ bodyContent)
