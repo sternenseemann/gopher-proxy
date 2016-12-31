@@ -19,6 +19,7 @@ import Data.Char (chr)
 import Data.Monoid ((<>))
 import Data.Text (Text ())
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import GHC.IO.Handle
 import GHC.IO.IOMode
@@ -30,14 +31,15 @@ import Network.Wai
 import Network.Wai.Handler.Warp
 import Lucid
 import qualified Options.Applicative as O
+import System.IO (stderr)
 
 gopherProxy :: Params -> Application
 gopherProxy cfg r resp
   | requestMethod r == "GET" &&
     rawPathInfo r == cssUrl cfg = cssResponse cfg r resp `catch` \(e::IOException) ->
-      internalErrorResponse "An IO error occured while retrieving the css." r resp
+      internalErrorResponse e "An IO error occured while retrieving the css." r resp
   | requestMethod r == "GET" = gopherResponse cfg r resp `catch` \(e::IOException) ->
-      internalErrorResponse (T.pack "An IO error occured while contacting the gopher server.") r resp
+      internalErrorResponse e "An IO error occured while contacting the gopher server." r resp
   | otherwise = badRequestResponse cfg r resp
 
 cssResponse :: Params -> Application
@@ -67,9 +69,10 @@ badRequestResponse :: Params -> Application
 badRequestResponse cfg _ respond = respond $ responseLBS badRequest400
   [("Content-type", "text/plain")] "gopher-proxy did not understand your request"
 
-internalErrorResponse :: Text -> Application
-internalErrorResponse err _ resp = resp $ responseLBS internalServerError500
-  [("Content-type", "text/plain")] (B.fromStrict (encodeUtf8 err))
+internalErrorResponse :: Exception e => e -> Text -> Application
+internalErrorResponse exp err _ resp = do
+  T.hPutStr stderr (err <> " (" <> T.pack (show exp) <> ")\n")
+  resp $ responseLBS internalServerError500 [("Content-type", "text/plain")] (B.fromStrict (encodeUtf8 err))
 
 makeGopherRequest :: HostName -> PortNumber -> ByteString -> IO (Maybe (GopherResponse, MimeType))
 makeGopherRequest host port req = do
