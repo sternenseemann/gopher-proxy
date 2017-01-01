@@ -16,6 +16,7 @@ cabal-version:       >=1.10
 
 executable gopher-proxy
   main-is:             Main.hs
+  default-extensions:  CPP
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base

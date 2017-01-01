@@ -59,3 +59,9 @@ params = Params
 
 optionalWithDefault :: a -> Parser a -> Parser a
 optionalWithDefault def p = fromMaybe def <$> optional p
+
+-- Thanks enum! <3
+#if !MIN_VERSION_network(2,6,3)
+instance Read PortNumber where
+  readsPrec i str = fmap (\(i,str) -> (fromInteger i,str)) $ readsPrec i str
+#endif
