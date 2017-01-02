@@ -18,7 +18,7 @@ data Params
     { hostname     :: HostName
     , port         :: PortNumber
     , httpPort     :: Int
-    , cssPath      :: FilePath
+    , cssPath      :: Maybe FilePath
     , cssUrl       :: BS.ByteString
     , baseUrl      :: Text
     , listenPublic :: Bool
@@ -41,10 +41,10 @@ params = Params
     (long "http-port"
     <> metavar "PORT"
     <> help "port gopher-proxy should listen on")
-  <*> strOption
+  <*> optional (strOption
     (long "css-path"
     <> metavar "PATH"
-    <> help "path of the css to be used")
+    <> help "path of the css to be used"))
   <*> optionalWithDefault "/gopher-proxy.css" (option auto
     (long "css-url"
     <> metavar "PATH"

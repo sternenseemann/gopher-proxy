@@ -8,6 +8,7 @@
 import GopherProxy.Types
 import GopherProxy.Protocol
 import GopherProxy.Params
+import Paths_gopher_proxy
 
 import Prelude hiding (takeWhile)
 import Control.Exception
@@ -32,6 +33,7 @@ import Network.Wai.Handler.Warp
 import Lucid
 import qualified Options.Applicative as O
 import System.IO (stderr)
+import System.Directory (doesFileExist)
 
 gopherProxy :: Params -> Application
 gopherProxy cfg r resp
@@ -44,8 +46,15 @@ gopherProxy cfg r resp
 
 cssResponse :: Params -> Application
 cssResponse cfg _ respond = do
-  css <- B.readFile . cssPath $ cfg
-  respond $ responseLBS status200 [("Content-type", "text/css")] css
+  path <- case cssPath cfg of
+            Just p -> pure p
+            Nothing -> getDataFileName "gopher-proxy.css"
+  exists <- doesFileExist path
+  if exists
+    then B.readFile path >>=
+        respond . responseLBS status200 [("Content-type", "text/css")]
+    else respond $
+      responseLBS status404 [("Content-type", "text/plain")] "Could not find css"
 
 gopherResponse :: Params -> Application
 gopherResponse cfg r respond = do

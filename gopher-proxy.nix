@@ -1,6 +1,6 @@
-{ mkDerivation, attoparsec, base, bytestring, errors, http-types
-, lucid, mime-types, network, optparse-applicative
-, optparse-generic, stdenv, text, wai, warp
+{ mkDerivation, attoparsec, base, bytestring, directory, errors
+, http-types, lucid, mime-types, network, optparse-applicative
+, stdenv, text, wai, warp
 }:
 mkDerivation {
   pname = "gopher-proxy";
@@ -9,8 +9,8 @@ mkDerivation {
   isLibrary = false;
   isExecutable = true;
   executableHaskellDepends = [
-    attoparsec base bytestring errors http-types lucid mime-types
-    network optparse-applicative optparse-generic text wai warp
+    attoparsec base bytestring directory errors http-types lucid
+    mime-types network optparse-applicative text wai warp
   ];
   description = "proxy gopher over http";
   license = stdenv.lib.licenses.gpl3;
