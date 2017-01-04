@@ -11,9 +11,12 @@ author:              sternenseemann
 maintainer:          git@lukasepple.de
 category:            Network
 build-type:          Simple
-extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 data-files:          gopher-proxy.css
+extra-source-files:  ChangeLog.md
+                     README.md
+homepage:            https://github.com/sternenseemann/gopher-proxy
+bug-reports:         https://github.com/sternenseemann/gopher-proxy/issues
 
 executable gopher-proxy
   main-is:             Main.hs
