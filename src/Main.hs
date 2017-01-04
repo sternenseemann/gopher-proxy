@@ -24,6 +24,7 @@ import Data.Text (Text ())
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding.Error (UnicodeException (..))
 import GHC.IO.Handle
 import GHC.IO.IOMode
 import Network.HTTP.Types
@@ -43,8 +44,10 @@ gopherProxy cfg r respond
   | requestMethod r == "GET" &&
     rawPathInfo r == cssUrl cfg = cssResponse cfg r respond `catch` \(e::IOException) ->
       exceptionResponse status500 e "Could not open css file" r respond
-  | requestMethod r == "GET" = gopherResponse cfg r respond `catch` \(e::IOException) ->
-      exceptionResponse status502 e "Could not reach the gopher server" r respond
+  | requestMethod r == "GET" = gopherResponse cfg r respond `catches`
+      [ Handler (\(e::IOException) -> exceptionResponse status502 e "Could not reach the gopher server" r respond)
+      , Handler (\(e::UnicodeException) -> exceptionResponse status502 e "Couldn't decode text using UTF-8" r respond)
+      ]
   | otherwise = badRequestResponse cfg r respond
 
 cssResponse :: Params -> Application
