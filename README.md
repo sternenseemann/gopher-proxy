@@ -24,7 +24,7 @@ option                | meaning
 
 ## Things to keep in mind
 
-* Your gopher server must send UTF-8-encoded responses or gopher-proxy will break (I will improve this)
+* Your gopher server must send UTF-8-encoded gopher menus
 * gopher-proxy might misinterpret certain content, because of the context-sensitive nature of gopher
 * gopher-proxy does not support Gopher+
 
