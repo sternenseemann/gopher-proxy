@@ -12,11 +12,13 @@ import Paths_gopher_proxy
 
 import Prelude hiding (takeWhile)
 import Control.Exception
+import Control.Monad (when)
 import Data.Attoparsec.ByteString.Lazy
 import Data.ByteString.Lazy (ByteString ())
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString as BS
 import Data.Char (chr)
+import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
 import Data.Text (Text ())
 import qualified Data.Text as T
@@ -34,15 +36,16 @@ import Lucid
 import qualified Options.Applicative as O
 import System.IO (stderr)
 import System.Directory (doesFileExist)
+import System.Timeout
 
 gopherProxy :: Params -> Application
-gopherProxy cfg r resp
+gopherProxy cfg r respond
   | requestMethod r == "GET" &&
-    rawPathInfo r == cssUrl cfg = cssResponse cfg r resp `catch` \(e::IOException) ->
-      internalErrorResponse e "An IO error occured while retrieving the css." r resp
-  | requestMethod r == "GET" = gopherResponse cfg r resp `catch` \(e::IOException) ->
-      internalErrorResponse e "An IO error occured while contacting the gopher server." r resp
-  | otherwise = badRequestResponse cfg r resp
+    rawPathInfo r == cssUrl cfg = cssResponse cfg r respond `catch` \(e::IOException) ->
+      exceptionResponse status500 e "Could not open css file" r respond
+  | requestMethod r == "GET" = gopherResponse cfg r respond `catch` \(e::IOException) ->
+      exceptionResponse status502 e "Could not reach the gopher server" r respond
+  | otherwise = badRequestResponse cfg r respond
 
 cssResponse :: Params -> Application
 cssResponse cfg _ respond = do
@@ -59,41 +62,54 @@ cssResponse cfg _ respond = do
 gopherResponse :: Params -> Application
 gopherResponse cfg r respond = do
   (resp, mime) <- (flip fmap)
-    (makeGopherRequest (hostname cfg) (port cfg) (B.fromStrict (rawPathInfo r))) $
+    (makeGopherRequest cfg (B.fromStrict (rawPathInfo r))) $
      \case
        Just r  -> r
        Nothing -> ( MenuResponse [ MenuItem '3' "An error occured while retrieving server's response." "" "" 0 ]
                   , "text/html")
-  respond $ uncurry (responseLBS status200) $
+
+  let status =
+        case resp of
+          FileResponse _ -> status200
+          MenuResponse items -> if all (\(MenuItem c _ _ _ _) -> c == '3') items
+                                  then status502
+                                  else status200
+  respond $ uncurry (responseLBS status) $
     case resp of
       MenuResponse _ ->
         ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg resp))
       FileResponse b ->
-        case fmap BS.tail (BS.span (/= 47) mime) of
+        case mimeTuple mime of
           ("text", "html") -> ([("Content-type", mime)], b)
           ("text", _)      -> ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg resp))
           _                -> ([("Content-type", mime)], b)
+
+mimeTuple :: MimeType -> (BS.ByteString, BS.ByteString)
+mimeTuple = fmap BS.tail . BS.span (/= 47)
 
 badRequestResponse :: Params -> Application
 badRequestResponse cfg _ respond = respond $ responseLBS badRequest400
   [("Content-type", "text/plain")] "gopher-proxy did not understand your request"
 
-internalErrorResponse :: Exception e => e -> Text -> Application
-internalErrorResponse exp err _ resp = do
+exceptionResponse :: Exception e => Status -> e -> Text -> Application
+exceptionResponse status exp err _ resp = do
   T.hPutStr stderr (err <> " (" <> T.pack (show exp) <> ")\n")
-  resp $ responseLBS internalServerError500 [("Content-type", "text/plain")] (B.fromStrict (encodeUtf8 err))
+  resp $ responseLBS status [("Content-type", "text/plain")] (B.fromStrict (encodeUtf8 err))
 
-makeGopherRequest :: HostName -> PortNumber -> ByteString -> IO (Maybe (GopherResponse, MimeType))
-makeGopherRequest host port req = do
-  addri:_ <- getAddrInfo Nothing (Just host) Nothing
+makeGopherRequest :: Params -> ByteString -> IO (Maybe (GopherResponse, MimeType))
+makeGopherRequest cfg req = do
+  addri:_ <- getAddrInfo Nothing (Just (hostname cfg)) Nothing
   let addr =
         case (addrAddress addri) of
-          SockAddrInet _ h -> SockAddrInet port h
-          SockAddrInet6 _ f h s -> SockAddrInet6 port f h s
+          SockAddrInet _ h -> SockAddrInet (port cfg) h
+          SockAddrInet6 _ f h s -> SockAddrInet6 (port cfg) f h s
           x -> x
 
   sock <- socket (addrFamily addri) Stream (addrProtocol addri)
-  connect sock addr
+
+  connected <- timeout (timeoutms cfg) $ connect sock addr
+  when (isNothing connected) $ throw (userError "connection timeout")
+
   hdl <- socketToHandle sock ReadWriteMode
   hSetBuffering hdl NoBuffering
   B.hPutStr hdl (req <> "\r\n")
@@ -102,7 +118,7 @@ makeGopherRequest host port req = do
     Left _ -> Nothing
     Right r -> case r of
                  MenuResponse _ -> Just (r, "text/html")
-                 FileResponse _ -> Just (r, mimeByExt defaultMimeMap defaultMimeType (decodeUtf8 (B.toStrict req)))
+                 FileResponse _ -> Just (r, mimeByExt defaultMimeMap (defaultMime cfg) (decodeUtf8 (B.toStrict req)))
 
 prependBaseUrl :: Text -> Text -> Text
 prependBaseUrl base path

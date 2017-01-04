@@ -10,6 +10,7 @@ import qualified Data.ByteString as BS
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text ())
+import Network.Mime (MimeType (), defaultMimeType)
 import Network.Socket (HostName (), PortNumber ())
 import Options.Applicative
 
@@ -22,6 +23,8 @@ data Params
     , cssUrl       :: BS.ByteString
     , baseUrl      :: Text
     , listenPublic :: Bool
+    , defaultMime  :: MimeType
+    , timeoutms    :: Int
     }
 
 helpfulParams :: ParserInfo Params
@@ -56,6 +59,15 @@ params = Params
   <*> switch
     (long "listen-public"
     <> help "wether gopher-proxy should accept connection on public IP addresses.")
+  <*> optionalWithDefault defaultMimeType (option auto
+    (long "default-mime-type"
+    <> metavar "MIMETYPE"
+    <> help "spacecookie uses this mimetype, if it can't guess the type, defaults to application/octet-stream"))
+  <*> optionalWithDefault 10000000 (option auto
+    (long "timeout"
+    <> metavar "MILLISECONDS"
+    <> help "timeout for connecting to the specified gopher server, defaults to 10s."))
+
 
 optionalWithDefault :: a -> Parser a -> Parser a
 optionalWithDefault def p = fromMaybe def <$> optional p
