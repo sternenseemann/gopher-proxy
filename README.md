@@ -21,3 +21,13 @@ option                | meaning
 `--listen-public`     | If this flag is set, gopher-proxy will accept connections on its public IP address(es).
 `--default-mime-type` | Mime type to use if spacecookie can't guess it, defaults to "application/octet-stream"
 `--timeout`           | Timeout when connecting in milliseconds, defaults to 10 seconds.
+
+## Things to keep in mind
+
+* Your gopher server must send UTF-8-encoded responses or gopher-proxy will break (I will improve this)
+* gopher-proxy might misinterpret certain content, because of the context-sensitive nature of gopher
+* gopher-proxy does not support Gopher+
+
+## Roadmap
+
+[ ] Add Logging
