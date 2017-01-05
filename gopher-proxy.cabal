@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                gopher-proxy
-version:             0.1.0.1
+version:             0.1.0.2
 synopsis:            proxy gopher over http
 description:         A simple gopher-over-http proxy to http-ify gopher spaces.
 license:             GPL-3
@@ -22,6 +22,9 @@ executable gopher-proxy
   main-is:             Main.hs
   default-extensions:  CPP
   other-modules:       Paths_gopher_proxy
+                     , GopherProxy.Types
+                     , GopherProxy.Protocol
+                     , GopherProxy.Params
   build-depends:       base >=4.9 && <4.10
                      , wai
                      , warp
