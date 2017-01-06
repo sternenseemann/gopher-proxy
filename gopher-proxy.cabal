@@ -18,7 +18,7 @@ description:
   .
   * Takes HTTP requests on @127.0.0.1:8080@ (to be used by a proxying web server, like nginx), converts those to gopher requests to @example.org@ and returns the gopher responses as HTTP responses
   .
-  * Links menu items pointing to external servers to @gopher://@ URLs (this ensures that only one gopher server is proxied) and recognizes <https://en.wikipedia.org/wiki/Gopher_(protocol)#URL_links URL links> which are converted to normal HTML links
+  * Links menu items pointing to external servers to @gopher:\/\/@ URLs (this ensures that only one gopher server is proxied) and recognizes <https://en.wikipedia.org/wiki/Gopher_(protocol)#URL_links URL links> which are converted to normal HTML links
   .
   * Tries to guess the correct mime-type for every gopher-served file (as it is not included in the response) and wraps text files in a HTML container.
   .
