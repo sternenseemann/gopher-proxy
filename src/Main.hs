@@ -64,8 +64,9 @@ cssResponse cfg _ respond = do
 
 gopherResponse :: Params -> Application
 gopherResponse cfg r respond = do
+  let req = rawPathInfo r
   (resp, mime) <- (flip fmap)
-    (makeGopherRequest cfg (B.fromStrict (rawPathInfo r))) $
+    (makeGopherRequest cfg (B.fromStrict req)) $
      \case
        Just r  -> r
        Nothing -> ( MenuResponse [ MenuItem '3' "An error occured while retrieving server's response." "" "" 0 ]
@@ -80,11 +81,11 @@ gopherResponse cfg r respond = do
   respond $ uncurry (responseLBS status) $
     case resp of
       MenuResponse _ ->
-        ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg resp))
+        ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg req resp))
       FileResponse b ->
         case mimeTuple mime of
           ("text", "html") -> ([("Content-type", mime)], b)
-          ("text", _)      -> ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg resp))
+          ("text", _)      -> ([("Content-type", "text/html")], renderBS (gResponseToHtml cfg req resp))
           _                -> ([("Content-type", mime)], b)
 
 mimeTuple :: MimeType -> (BS.ByteString, BS.ByteString)
@@ -132,16 +133,17 @@ prependBaseUrl base path
   | T.last base == '/' = base <> path
   | otherwise = base <> "/" <> path
 
--- we generally assume that everything is utf-8 encoded
-gResponseToHtml :: Params -> GopherResponse -> Html ()
-gResponseToHtml cfg res
+gResponseToHtml :: Params -> BS.ByteString -> GopherResponse -> Html ()
+gResponseToHtml cfg req res
   = doctype_ <> html_
       (head_ (meta_ [charset_ "utf-8"]
              <> meta_ [term "viewport" "width=device-width"]
-             <> title_ "gopher-proxy"
-             <> link_ [rel_ "stylesheet", type_ "text/css", href_ . decodeUtf8 . cssUrl $ cfg])
+             <> title_ title'
+             <> link_ [rel_ "stylesheet", type_ "text/css", href_ cssUrl'])
       <> body_ bodyContent)
-  where bodyContent = case res of
+  where cssUrl' = decodeUtf8 . cssUrl $ cfg
+        title' = (toHtml (title cfg)) <> (toHtml (" – " :: Text)) <> (toHtml req)
+        bodyContent = case res of
                         FileResponse bytes -> pre_ (toHtml bytes)
                         MenuResponse items -> ul_ $ foldl (itemChain cfg) mempty items
 
@@ -153,11 +155,19 @@ itemChain cfg acc (MenuItem typec desc path' host' port')
                        'i' -> toHtml desc
                        '3' -> span_ [class_ "error"] (toHtml desc)
                        _   -> a_ [href_ url] (toHtml desc)
+          serverName' = case serverName cfg of
+                          Just s -> s
+                          Nothing -> hostname cfg
           url = if "URL:" `T.isPrefixOf` path
                   then T.drop 4 path
-                  else if host' == hostname cfg && port' == port cfg
+                  else if host' == serverName' && port' == port cfg
                     then prependBaseUrl (baseUrl cfg) path
-                    else prependBaseUrl ("gopher://" <> (T.pack host') <> ":" <> (T.pack (show port'))) path
+                    else gopherUrl host' port' typec path
+
+gopherUrl :: HostName -> PortNumber -> Char -> Text -> Text
+gopherUrl host port typeChar path = prependBaseUrl
+  ("gopher://" <> (T.pack host) <> ":" <> (T.pack (show port)) <> "/" <> (T.singleton typeChar) <> "/")
+  path
 
 main :: IO ()
 main = do

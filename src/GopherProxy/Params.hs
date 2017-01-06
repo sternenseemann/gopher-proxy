@@ -9,7 +9,8 @@ module GopherProxy.Params
 import qualified Data.ByteString as BS
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
-import Data.Text (Text ())
+import Data.Text (Text (), pack)
+import Data.Text.Encoding
 import Network.Mime (MimeType (), defaultMimeType)
 import Network.Socket (HostName (), PortNumber ())
 import Options.Applicative
@@ -25,6 +26,8 @@ data Params
     , listenPublic :: Bool
     , defaultMime  :: MimeType
     , timeoutms    :: Int
+    , serverName   :: Maybe HostName
+    , title        :: String
     }
 
 helpfulParams :: ParserInfo Params
@@ -48,7 +51,7 @@ params = Params
     (long "css-path"
     <> metavar "PATH"
     <> help "path of the css to be used"))
-  <*> optionalWithDefault "/gopher-proxy.css" (option auto
+  <*> optionalWithDefault "/gopher-proxy.css" (option utf8ByteString
     (long "css-url"
     <> metavar "PATH"
     <> help "absolute location of the css on the web server, defaults to \"/gopher-proxy.css\""))
@@ -67,7 +70,18 @@ params = Params
     (long "timeout"
     <> metavar "MILLISECONDS"
     <> help "timeout for connecting to the specified gopher server, defaults to 10s."))
+  <*> optional (strOption
+    (long "server-name"
+    <> metavar "HOSTNAME"
+    <> help "The server name of the target gopher server, it sends in gopher menus. Defaults to hostname."))
+  <*> optionalWithDefault "gopher-proxy" (strOption
+    (long "title"
+    <> metavar "STRING"
+    <> help "title of the resulting html page"))
 
+
+utf8ByteString :: ReadM BS.ByteString
+utf8ByteString = encodeUtf8 . pack <$> str
 
 optionalWithDefault :: a -> Parser a -> Parser a
 optionalWithDefault def p = fromMaybe def <$> optional p
