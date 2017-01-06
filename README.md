@@ -20,6 +20,7 @@ These are all optional flags which allow to change default behavior:
 * `--default-mime-type`: Mime type to use if spacecookie can't guess it, defaults to "application/octet-stream"
 * `--timeout`: connection timeout in milliseconds, defaults to 10 seconds.
 * `--server-name`: The server name of the server to proxy, defaults to the host name. This value is used to detect wether a menu item is pointing to another gopher server than the proxied one. This is particularly useful, if you use e. g. `127.0.0.1` instead of the public host name.
+* `--title`: Sets the first part of the HTML title-tag, defaults to `gopher-proxy`.
 
 ## Things to keep in mind
 

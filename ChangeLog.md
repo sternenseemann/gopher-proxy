@@ -1,5 +1,9 @@
 # Revision history for gopher-proxy
 
+## 0.1.1.1 -- 2017-01-06
+
+* Add missing documentation for `--title`
+
 ## 0.1.1.0 -- 2017-01-06
 
 * Add two options: `--title` and `--server-name`

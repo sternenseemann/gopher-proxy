@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                gopher-proxy
-version:             0.1.1.0
+version:             0.1.1.1
 synopsis:            proxy gopher over http
 description:
   @gopher-proxy@ allows to proxy gopher over HTTP, which is mainly useful for HTTP-ifying a specific gopher space.
