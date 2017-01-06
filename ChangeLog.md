@@ -1,5 +1,11 @@
 # Revision history for gopher-proxy
 
+## 0.1.1.0 -- 2017-01-06
+
+* Add two options: `--title` and `--server-name`
+* Fix the README on hackage
+* Elaborate the package description
+
 ## 0.1.0.2  -- 2017-01-05
 
 * Fixed a build issue
