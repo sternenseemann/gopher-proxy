@@ -13,7 +13,7 @@ In this particular example, gopher-proxy would proxy the `foo.org` gopher server
 These are all optional flags which allow to change default behavior:
 
 * `--port`: The port of the gopher server, defaults to `70`
-* `--css-url`: Use some specific css file instead of the default one.
+* `--css-path`: Use some specific css file instead of the default one.
 * `--css-url`: The http path of the css file, defaults to `/gopher-proxy.css` (should be changed, if your gopher server has a file with the same name
 * `--base-url`: The path of the directory which will appear as root directory of gopher-proxy to the user, defaults to `/`. Should be changed if you configured your proxying web server to expose gopher-proxy as, say `/gopher-space/`.
 * `--listen-public`: If this flag is set, gopher-proxy will accept connections on its public IP address(es).
