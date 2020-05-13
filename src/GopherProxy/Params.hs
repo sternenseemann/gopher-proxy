@@ -65,7 +65,7 @@ params = Params
   <*> optionalWithDefault defaultMimeType (option auto
     (long "default-mime-type"
     <> metavar "MIMETYPE"
-    <> help "spacecookie uses this mimetype, if it can't guess the type, defaults to application/octet-stream"))
+    <> help "gopher-proxy uses this mimetype, if it can't guess the type, defaults to application/octet-stream"))
   <*> optionalWithDefault 10000000 (option auto
     (long "timeout"
     <> metavar "MILLISECONDS"

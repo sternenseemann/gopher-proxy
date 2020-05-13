@@ -17,7 +17,7 @@ These are all optional flags which allow to change default behavior:
 * `--css-url`: The http path of the css file, defaults to `/gopher-proxy.css` (should be changed, if your gopher server has a file with the same name
 * `--base-url`: The path of the directory which will appear as root directory of gopher-proxy to the user, defaults to `/`. Should be changed if you configured your proxying web server to expose gopher-proxy as, say `/gopher-space/`.
 * `--listen-public`: If this flag is set, gopher-proxy will accept connections on its public IP address(es).
-* `--default-mime-type`: Mime type to use if spacecookie can't guess it, defaults to "application/octet-stream"
+* `--default-mime-type`: Mime type to use if gopher-proxy can't guess it, defaults to "application/octet-stream"
 * `--timeout`: connection timeout in milliseconds, defaults to 10 seconds.
 * `--server-name`: The server name of the server to proxy, defaults to the host name. This value is used to detect wether a menu item is pointing to another gopher server than the proxied one. This is particularly useful, if you use e. g. `127.0.0.1` instead of the public host name.
 * `--title`: Sets the first part of the HTML title-tag, defaults to `gopher-proxy`.
