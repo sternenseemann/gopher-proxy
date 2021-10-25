@@ -29,7 +29,7 @@ description:
 license:             GPL-3
 license-file:        LICENSE
 author:              sternenseemann
-maintainer:          git@lukasepple.de
+maintainer:          sternenseemann@systemli.org
 category:            Network
 build-type:          Simple
 cabal-version:       >=1.10
