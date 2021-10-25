@@ -62,7 +62,7 @@ params = Params
   <*> switch
     (long "listen-public"
     <> help "wether gopher-proxy should accept connection on public IP addresses.")
-  <*> optionalWithDefault defaultMimeType (option auto
+  <*> optionalWithDefault defaultMimeType (option utf8ByteString
     (long "default-mime-type"
     <> metavar "MIMETYPE"
     <> help "gopher-proxy uses this mimetype, if it can't guess the type, defaults to application/octet-stream"))

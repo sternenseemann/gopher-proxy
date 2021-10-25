@@ -3,6 +3,9 @@
 ## 0.1.1.3 -- 2021-10-25
 
 * Support (and require) `attoparsec >= 0.14`
+* Fix parsing of the `--default-mime-type` flag: Previoulsy the
+  `Read` instance was used and thus required the user to surround
+  the mime type with (extra) quotes.
 
 ## 0.1.1.1 -- 2017-01-06
 
