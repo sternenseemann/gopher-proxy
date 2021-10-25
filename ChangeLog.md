@@ -1,5 +1,9 @@
 # Revision history for gopher-proxy
 
+## 0.1.1.3 -- 2021-10-25
+
+* Support (and require) `attoparsec >= 0.14`
+
 ## 0.1.1.1 -- 2017-01-06
 
 * Add missing documentation for `--title`

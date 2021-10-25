@@ -117,7 +117,7 @@ makeGopherRequest cfg req = do
   hdl <- socketToHandle sock ReadWriteMode
   hSetBuffering hdl NoBuffering
   B.hPutStr hdl (req <> "\r\n")
-  resp <- BS.hGetContents hdl
+  resp <- B.hGetContents hdl
   pure $ case parseOnly (gopherResponseParser Nothing) resp of
     Left _ -> Nothing
     Right r -> case r of

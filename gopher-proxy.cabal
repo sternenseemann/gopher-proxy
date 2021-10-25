@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                gopher-proxy
-version:             0.1.1.2
+version:             0.1.1.3
 synopsis:            proxy gopher over http
 description:
   @gopher-proxy@ allows to proxy gopher over HTTP, which is mainly useful for HTTP-ifying a specific gopher space.
@@ -54,7 +54,7 @@ executable gopher-proxy
                      , bytestring
                      , text
                      , network
-                     , attoparsec
+                     , attoparsec >= 0.14
                      , errors
                      , mime-types
                      , optparse-applicative
