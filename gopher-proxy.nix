@@ -4,7 +4,7 @@
 }:
 mkDerivation {
   pname = "gopher-proxy";
-  version = "0.1.1.2";
+  version = "0.1.1.3";
   src = ./.;
   isLibrary = false;
   isExecutable = true;
@@ -16,4 +16,5 @@ mkDerivation {
   homepage = "https://github.com/sternenseemann/gopher-proxy";
   description = "proxy gopher over http";
   license = lib.licenses.gpl3Only;
+  mainProgram = "gopher-proxy";
 }
