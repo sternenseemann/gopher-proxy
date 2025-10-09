@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 import           Control.Exception
-import           Control.Monad (when)
+import           Control.Monad (join, when)
 import           Data.Attoparsec.ByteString.Lazy
 import qualified Data.ByteString as BS
 import           Data.ByteString.Lazy (ByteString)
@@ -14,9 +14,9 @@ import           Data.Maybe (fromMaybe, isNothing)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import           Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import           Data.Text.Encoding.Error (UnicodeException (..))
+import qualified Data.Text.IO as T
 import           GHC.IO.Handle
 import           GHC.IO.IOMode
 import           GopherProxy.Params
@@ -86,9 +86,16 @@ cssResponse cfg _ respond = do
 
 gopherResponse :: Params -> Application
 gopherResponse cfg r respond = do
-  let (gopherSelector, itemType) = parseRequestPath (rawPathInfo r)
+  let (gopherSelectorBS, itemType) = parseRequestPath (rawPathInfo r)
+
+  let queryBS = fromMaybe "" $ join $ lookup "q" (queryString r)
+  let finalSelectorBS =
+        if itemType == Just '7' && not (BS.null queryBS)
+        then gopherSelectorBS <> BS.singleton 9 <> queryBS -- 9 is '\t'
+        else gopherSelectorBS
+
   (resp, mime) <- (flip fmap)
-    (makeGopherRequest cfg (B.fromStrict gopherSelector) itemType (B.fromStrict $ rawPathInfo r)) $
+    (makeGopherRequest cfg (B.fromStrict finalSelectorBS) itemType (B.fromStrict $ rawPathInfo r)) $
      \case
        Just r'  -> r'
        Nothing -> ( MenuResponse [ MenuItem '3' "An error occured while retrieving server's response." "" "" 0 ]
@@ -141,11 +148,14 @@ makeGopherRequest cfg selector itemType originalReqPath = do
   B.hPutStr hdl (selector <> "\r\n")
   resp <- B.hGetContents hdl
 
-  let responseType = case itemType of
-                       Just '1' -> Just Menu
-                       Just '7' -> Just Menu
-                       Just _   -> Just File
-                       Nothing  -> Nothing
+  let responseType =
+        case itemType of
+          Just '1' -> Just Menu
+          Just '7' -> if B.any (== 9) selector
+                        then Nothing -- Search result could be Menu or File, so auto-detect
+                        else Just Menu -- Just the search prompt itself is a menu item
+          Just _   -> Just File
+          Nothing  -> Nothing
 
   pure $ case parseOnly (gopherResponseParser responseType) resp of
     Left _ -> Nothing
@@ -186,17 +196,24 @@ itemChain :: Params -> Html () -> MenuItem -> Html ()
 itemChain cfg acc (MenuItem typec desc path' host' port')
   = acc <> li_ itemHtml
     where path = decodeUtf8 . B.toStrict $ path'
-          itemHtml = case typec of
-                       'i' -> toHtml desc
-                       '3' -> span_ [class_ "error"] (toHtml desc)
-                       _   -> a_ [href_ url] (toHtml desc)
           serverName' = case serverName cfg of
                           Just s -> s
                           Nothing -> hostname cfg
+          isLocal = host' == serverName' && port' == port cfg
+          localPath = prependBaseUrl (baseUrl cfg) (T.singleton typec <> "/" <> path)
+          itemHtml = case typec of
+                       '7' | isLocal ->
+                         toHtml desc <> " " <>
+                         form_ [method_ "GET", action_ localPath, style_ "display: inline;"]
+                               (input_ [type_ "text", name_ "q"] <> " " <>
+                                input_ [type_ "submit", value_ "Search"])
+                       'i' -> toHtml desc
+                       '3' -> span_ [class_ "error"] (toHtml desc)
+                       _   -> a_ [href_ url] (toHtml desc)
           url = if "URL:" `T.isPrefixOf` path
                   then T.drop 4 path
-                  else if host' == serverName' && port' == port cfg
-                    then prependBaseUrl (baseUrl cfg) (T.singleton typec <> "/" <> path)
+                  else if isLocal
+                    then localPath
                     else gopherUrl host' port' typec path
 
 gopherUrl :: HostName -> PortNumber -> Char -> Text -> Text
